@@ -1,5 +1,7 @@
+from flask import Flask
 from app import create_app, db
 from app.models import User, Service, Incident, IncidentUpdate, ScheduledMaintenance
+import app.events  # Import the events module
 
 app = create_app()
 
@@ -13,5 +15,7 @@ def make_shell_context():
         'IncidentUpdate': IncidentUpdate,
         'ScheduledMaintenance': ScheduledMaintenance
     }
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    from app import socketio
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

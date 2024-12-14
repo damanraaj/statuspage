@@ -3,57 +3,46 @@
 {% block title %}Manage Services{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="bg-white shadow rounded-lg p-6">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">Add New Service</h2>
-        <form method="POST" class="space-y-4">
-            <div>
-                <label for="name" class="block text-sm font-medium text-gray-700">Service Name</label>
-                <input type="text" name="name" id="name" required
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-            </div>
-            <div>
-                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                <textarea name="description" id="description" rows="3"
-                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></textarea>
-            </div>
-            <div>
-                <button type="submit" 
-                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                    Add Service
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <div class="bg-white shadow rounded-lg p-6">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">Existing Services</h2>
-        <div class="space-y-4">
-            {% for service in services %}
-            <div class="border rounded-lg p-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-medium text-gray-900">{{ service.name }}</h3>
-                    <div class="flex items-center space-x-4">
-                        <form method="POST" action="{{ url_for('admin.update_service_status', service_id=service.id) }}" class="flex items-center space-x-2">
-                            <select name="status" 
-                                    class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-                                <option value="operational" {% if service.status == 'operational' %}selected{% endif %}>Operational</option>
-                                <option value="degraded" {% if service.status == 'degraded' %}selected{% endif %}>Degraded</option>
-                                <option value="outage" {% if service.status == 'outage' %}selected{% endif %}>Outage</option>
-                            </select>
-                            <button type="submit" 
-                                    class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                                Update
-                            </button>
-                        </form>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Manage Services</h1>
+    
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {% for service in services %}
+        <div class="bg-white shadow rounded-lg p-6">
+            <form action="{{ url_for('admin.update_service', service_id=service.id) }}" method="post">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Service Name</label>
+                        <div class="mt-1">
+                            <input type="text" disabled value="{{ service.name }}" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md bg-gray-50">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                        <select id="status" name="status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                            <option value="operational" {% if service.status == 'operational' %}selected{% endif %}>Operational</option>
+                            <option value="degraded" {% if service.status == 'degraded' %}selected{% endif %}>Degraded</option>
+                            <option value="outage" {% if service.status == 'outage' %}selected{% endif %}>Outage</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <div class="mt-1">
+                            <textarea id="description" name="description" rows="3" class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md">{{ service.description }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Update Service
+                        </button>
                     </div>
                 </div>
-                {% if service.description %}
-                <p class="mt-2 text-sm text-gray-600">{{ service.description }}</p>
-                {% endif %}
-            </div>
-            {% endfor %}
+            </form>
         </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

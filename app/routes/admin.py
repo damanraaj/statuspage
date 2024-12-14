@@ -3,6 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.models import User, Service, Incident, IncidentUpdate, ScheduledMaintenance
 from app import db
 from datetime import datetime
+from ..events import emit_status_update
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -52,7 +53,7 @@ def services():
     services = Service.query.all()
     return render_template('admin/services.html', services=services)
 
-@bp.route('/service/<int:service_id>/status', methods=['POST'])
+@bp.route('/services/<int:service_id>/status', methods=['POST'])
 @login_required
 def update_service_status(service_id):
     service = Service.query.get_or_404(service_id)
@@ -62,6 +63,23 @@ def update_service_status(service_id):
         db.session.commit()
         flash(f'Service status updated to {status}', 'success')
     return redirect(url_for('admin.services'))
+
+@bp.route('/services/<int:service_id>/update', methods=['POST'])
+@login_required
+def update_service(service_id):
+    service = Service.query.get_or_404(service_id)
+    status = request.form.get('status')
+    description = request.form.get('description')
+
+    if status:
+        service.status = status
+    if description:
+        service.description = description
+
+    db.session.commit()
+    emit_status_update('Service status updated', f'{service.name} is now {service.status}')
+    flash('Service status updated successfully', 'success')
+    return redirect(url_for('admin.dashboard'))
 
 @bp.route('/incidents', methods=['GET', 'POST'])
 @login_required
@@ -163,6 +181,9 @@ def update_maintenance(maintenance_id):
         maintenance.status = 'completed'
         maintenance.end_time = datetime.utcnow()
         flash('Maintenance event marked as completed', 'success')
+        # Emit event to update clients
+        print('Emitting status update...')
+        emit_status_update('Maintenance completed', maintenance.title)
     
     db.session.commit()
     return redirect(url_for('admin.maintenance'))

@@ -4,6 +4,56 @@
 
 {% block content %}
 <div class="space-y-6">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        // Initialize socket with explicit configuration
+        var socket = io('/', {
+            transports: ['websocket'],
+            upgrade: false
+        });
+        
+        console.log('Socket.IO client initialized');
+        
+        socket.on('connect', function() {
+            console.log('Socket.IO connected');
+        });
+
+        socket.on('disconnect', function() {
+            console.log('Socket.IO disconnected');
+        });
+    
+        socket.on('status_update', function(data) {
+            console.log('Status update received:', data);
+            
+            // Create flash message
+            const flashContainer = document.createElement('div');
+            flashContainer.className = 'fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded';
+            flashContainer.setAttribute('role', 'alert');
+            
+            const message = document.createElement('span');
+            message.className = 'block sm:inline';
+            message.textContent = `${data.message}: ${data.title}`;
+            
+            flashContainer.appendChild(message);
+            document.body.appendChild(flashContainer);
+            
+            // Remove flash message after 3 seconds
+            setTimeout(function() {
+                flashContainer.remove();
+                // Reload the page after removing the flash message
+                window.location.reload();
+            }, 3000);
+        });
+
+        // Add error handling
+        socket.on('connect_error', function(error) {
+            console.log('Connection error:', error);
+        });
+
+        socket.on('error', function(error) {
+            console.log('Socket.IO error:', error);
+        });
+    </script>
     <div class="bg-white shadow rounded-lg p-6">
         <h2 class="text-2xl font-bold text-gray-900 mb-4">Current System Status</h2>
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
