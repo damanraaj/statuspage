@@ -43,3 +43,14 @@ class IncidentUpdate(db.Model):
     message = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ScheduledMaintenance(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(20), default='upcoming')  # upcoming, ongoing, completed
+
+    def __repr__(self):
+        return f'<ScheduledMaintenance {self.title}>'

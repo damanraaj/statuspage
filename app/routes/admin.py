@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from app.models import User, Service, Incident, IncidentUpdate
+from app.models import User, Service, Incident, IncidentUpdate, ScheduledMaintenance
 from app import db
 from datetime import datetime
 
@@ -29,7 +29,14 @@ def logout():
 def dashboard():
     services = Service.query.all()
     incidents = Incident.query.order_by(Incident.created_at.desc()).limit(5).all()
-    return render_template('admin/dashboard.html', services=services, incidents=incidents)
+    maintenance_events = ScheduledMaintenance.query.filter(
+        ScheduledMaintenance.end_time >= datetime.utcnow()
+    ).order_by(ScheduledMaintenance.start_time.asc()).limit(3).all()
+    
+    return render_template('admin/dashboard.html', 
+                         services=services, 
+                         incidents=incidents,
+                         maintenance_events=maintenance_events)
 
 @bp.route('/services', methods=['GET', 'POST'])
 @login_required
@@ -104,3 +111,58 @@ def add_incident_update(incident_id):
         db.session.commit()
         flash('Update added successfully', 'success')
     return redirect(url_for('admin.incidents'))
+
+@bp.route('/maintenance', methods=['GET', 'POST'])
+@login_required
+def maintenance():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        start_time = datetime.strptime(request.form.get('start_time'), '%Y-%m-%dT%H:%M')
+        end_time = datetime.strptime(request.form.get('end_time'), '%Y-%m-%dT%H:%M')
+        
+        maintenance = ScheduledMaintenance(
+            title=title,
+            description=description,
+            start_time=start_time,
+            end_time=end_time,
+            status='upcoming'
+        )
+        db.session.add(maintenance)
+        db.session.commit()
+        flash('Scheduled maintenance added successfully', 'success')
+        return redirect(url_for('admin.maintenance'))
+    
+    # Get all maintenance events, ordered by start time
+    maintenance_events = ScheduledMaintenance.query.order_by(ScheduledMaintenance.start_time.desc()).all()
+    
+    # Update status of maintenance events based on current time
+    current_time = datetime.utcnow()
+    for event in maintenance_events:
+        if event.start_time <= current_time <= event.end_time:
+            if event.status != 'ongoing':
+                event.status = 'ongoing'
+                db.session.commit()
+        elif current_time > event.end_time:
+            if event.status != 'completed':
+                event.status = 'completed'
+                db.session.commit()
+    
+    return render_template('admin/maintenance.html', maintenance_events=maintenance_events)
+
+@bp.route('/maintenance/<int:maintenance_id>/update', methods=['POST'])
+@login_required
+def update_maintenance(maintenance_id):
+    maintenance = ScheduledMaintenance.query.get_or_404(maintenance_id)
+    action = request.form.get('action')
+    
+    if action == 'cancel':
+        db.session.delete(maintenance)
+        flash('Maintenance event cancelled', 'success')
+    elif action == 'complete':
+        maintenance.status = 'completed'
+        maintenance.end_time = datetime.utcnow()
+        flash('Maintenance event marked as completed', 'success')
+    
+    db.session.commit()
+    return redirect(url_for('admin.maintenance'))
